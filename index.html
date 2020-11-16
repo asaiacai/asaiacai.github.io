@@ -1,0 +1,219 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<!-- saved from url=(0098)https://inst.eecs.berkeley.edu/~cs194-26/fa20/upload/files/proj3/cs194-26-adi/andrew_aikawa_proj3/ -->
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<style>
+  body {
+    padding: 100px;
+    width: 1000px;
+    margin: auto;
+    text-align: left;
+    font-weight: 300;
+    font-family: 'Open Sans', sans-serif;
+    color: #121212;
+  }
+  h1, h2, h3, h4 {
+    font-family: 'Source Sans Pro', sans-serif;
+  }
+</style>
+<title>CS 194 Project 5</title>
+
+<link href="./index_files/css" rel="stylesheet">
+</head>
+
+
+<body>
+
+<h1 align="middle">CS 194 Fall 2020</h1>
+<h1 align="middle">Project 5A: Image Warping and Mosaicing</h1>
+<h2 align="middle">Andrew Aikawa</h2>
+
+<h2 align="middle">Overview</h2>
+
+<p>The goal of this project is to create image rectifications and image mosaics through calculation of homographies.</p>
+
+<h2 align="middle">Shoot the Photos</h2>
+
+<p>For this portion of the project, I worked with Derek Phan and Ja Wattanawong. We went around campus to shoot some photos with a DSLR camera. The ones I used for this project are shown below</p>
+
+<div align="middle">
+  <table style="width=100%">
+    <tbody>
+      <tr>
+        <td>
+          <img src="./data/haas_1.JPG" align="middle" width="400">
+        </td>
+        <td>
+          <img src="./data/haas_2.JPG" align="middle" width="400">
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <img src="./data/doe1.JPG" align="middle" width="400">
+        </td>
+        <td>
+          <img src="./data/doe2.JPG" align="middle" width="400">
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <img src="./data/mosaic1-1.JPG" align="middle" width="400">
+        </td>
+        <td>
+          <img src="./data/mosaic1-2.JPG" align="middle" width="400">
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <img src="./data/rect1.JPG" align="middle" width="400">
+        </td>
+        <td>
+          <img src="./data/rect2.JPG" align="middle" width="400">
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<h2 align="middle">Recover Homographies</h2>
+
+<p>Homography recovery requires at least 4 different correspondence points since homography has 8 degrees of freedom.  However, having an overdetermined system and solving through least squares results in a much more robust estimate of the the homography transform. I implemented the homography estimation through spectral value decomposition as outlined <a href="https://cseweb.ucsd.edu/classes/wi07/cse252a/homography_estimation/homography_estimation.pdf">here</a>. Then I just had to choose my corresondence points which I illustrate below</p>
+
+<div align="middle">
+  <table style="width=100%">
+    <tbody>
+      <tr>
+        <td>
+          <img src="./output/haas_corr1.png" align="middle" width="400">
+        </td>
+        <td>
+          <img src="./output/haas_corr2.png" align="middle" width="400">
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <img src="./output/doe_corr1.png" align="middle" width="400">
+        </td>
+        <td>
+          <img src="./output/doe_corr2.png" align="middle" width="400">
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <img src="./output/mosaic_corr1.png" align="middle" width="400">
+        </td>
+        <td>
+          <img src="./output/mosaic_corr2.png" align="middle" width="400">
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <img src="./output/rect_corr1.png" align="middle" width="400">
+        </td>
+        <td>
+          <img src="./output/rect_corr2.png" align="middle" width="400">
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<h2 align="middle">Image Warp</h2>
+
+<p>Now that we have a homography matrix, H, we can begin coloring.  To do this, I first applied H on vertices of the source image to find the bounding polygon of the transformed image. From here, I can find out which pixels I need to color in the destination. I calculate the inverse transform to back transform the pixel coords back onto the source texture for sampling through interpolation. We also set the alpha value for the colored pixels to 1. Below is the intermediate result of some of my warps before stitching.</p>
+
+<div align="middle">
+  <table style="width=100%">
+    <tbody>
+      <tr>
+        <td>
+          <img src="./output/warp1.png" align="middle" width="400">
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <img src="./output/warp2.png" align="middle" width="400">
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <img src="./output/warp3.png" align="middle" width="400">
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<h2 align="middle">Image Rectification</h2>
+
+<p>We can use homography to rectify images so that for images of planar surfaces that we take from an angle, we can see what they would look like from a perpendicular viewpoint.  For this, we found some squares the vertices serving as the correspondence points homography mapping from these points to the Cartesian product of {0, 1} x {0, 1}</p>
+
+<div align="middle">
+  <table style="width=100%">
+    <tbody>
+      <tr>
+        <td>
+          <img src="./output/rect_corr1.png" align="middle" width="400">
+        </td>
+        <td>
+          <img src="./output/rectified.png" align="middle" width="400">
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <img src="./output/rect_corr2.png" align="middle" width="400">
+        </td>
+        <td>
+          <img src="./output/rectified2.png" align="middle" width="400">
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<h2 align="middle">Image blending</h2>
+
+<p>We can also create panoramas by blending projective transformed images together. For me it was sufficient enough to warp one image onto an unwarped destination image. I would have a blank canvas big enough to fit the combined images after which I would add them together.  For combining images, alpha blend averaging the two images together worked best for me in reducing linear artifacts. My results are shown below
+
+<div align="left">
+  <table style="width=100%">
+    <tbody>
+      <tr>
+        <td>
+          <img src="./data/haas_1.JPG" width="400">
+        </td>
+        <td>
+          <img src="./data/haas_2.JPG" width="400">
+        </td>
+        <td>
+          <img src="./output/mosaic1.png" width="700">
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <img src="./data/mosaic1-1.JPG" width="400">
+        </td>
+        <td>
+          <img src="./data/mosaic1-2.JPG" width="400">
+        </td>
+        <td>
+          <img src="./output/mosaic2.png" width="700">
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <img src="./data/doe1.JPG" width="400">
+        </td>
+        <td>
+          <img src="./data/doe2.JPG" width="400">
+        </td>
+        <td>
+          <img src="./output/mosaic3.png" width="700">
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<p>From this project I learned that getting calculating the homography requires a lot of really spaced out points. For part of the project, I had chosen correspondence points that were too close together giving me a really bad H matrix which was confusing.  The problem wasn't with my implementation however but the choice of correspondence points which was an easy fix thankfully</p>
+
+</body></html>
