@@ -24,7 +24,7 @@
 <body>
 
 <h1 align="middle">CS 194 Fall 2020</h1>
-<h1 align="middle">Project 5A: Image Warping and Mosaicing</h1>
+<h1 align="middle">Project 5: Image Warping and Mosaicing</h1>
 <h2 align="middle">Andrew Aikawa</h2>
 
 <h2 align="middle">Overview</h2>
@@ -215,5 +215,110 @@
 </div>
 
 <p>From this project I learned that getting calculating the homography requires a lot of really spaced out points. For part of the project, I had chosen correspondence points that were too close together giving me a really bad H matrix which was confusing.  The problem wasn't with my implementation however but the choice of correspondence points which was an easy fix thankfully</p>
+
+<h1>Part B : Feature Matching for Autostitching</h1>
+
+<h2>Step 1 : Harris Corner Detection</h2>
+
+<p>To begin detecting features, we look for corners which are points in an image that sharply change intensity along the corner directions.  To do this we use the Harris Corner detector using the sample code provided. The way the Harris Corner detector works is it compares the relative change in intensity in some window in an image against a shifted window.  If the change in intensity is sharp along all directions, we know that this location contains a corner.  Below is an image plotted with the detected corners</p>
+
+<div align="left">
+  <table style="width=100%">
+    <tbody>
+      <tr>
+        <td>
+          <img src="./output/harris.png" width="400">
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<h2> Step 2 : Adaptive Non-Maximal Suppression </h2>
+
+<p>We can detect corners but many of the keypoints are densely packed together.  This is not so useful for computing homography so we should decrease the density whilst keeping the most important features.  We do Adaptive Non-Maximal Suppression, which just means we keep the strongest points (with respect to the corner response function) within the locality of the point. We do this by setting the suppression radius to infinity initially.  Initially, at this point we only keep is the global max corner.  However, as we decrease the suppression radius, more locally maximal points will be added until we get n = 500 points.  Below is an plot of the same image using adaptive non-maximal suppression to filter keypoints out</p>
+
+<div align="left">
+  <table style="width=100%">
+    <tbody>
+      <tr>
+        <td>
+          <img src="./output/adap.png" width="400">
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<h2> Step 3 : Feature Descriptor extraction and matching</h2>
+
+<p> To finalize, our feature finding, we need to create descriptors for each keypoint.  To do this, we just take a (40x40) axis-aligned box centered about the keypoint then downsample it to (8x8). We bias/gain normalize this descriptor by subtracting away the mean and dividing by the standard deviation and save this downsampled image as a feature descriptor vector.</p>
+
+<p> Now that we have a set of keypoints and associated descriptors, we can try matching keypoints between two images using the feature descriptors. To match features, we just use nearest neighbor search in the feature space.  However, not all feature pairs are likely to be that useful.  So we filter by thresholding matches with respect to the ratio of the first-nearest neighbor match to the second nearest neighbor match, the idea being that a good feature pair should unambiguously match one point in each image. Below is a plot of the matched feature, a pair of two images.</p>
+
+<div align="left">
+  <table style="width=100%">
+    <tbody>
+      <tr>
+        <td>
+          <img src="./output/match1.png" width="400">
+        </td>
+         <td>
+          <img src="./output/match2.png" width="400">
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<h2> Step 4 : RANSAC homography estimation</h2>
+
+<p>Even after filtering and keeping the best features we could find, there's a good chance of bad matches.  To exclude these outliers from the homography estimation, we use Random Sample Consensus (RANSAC).  Random sample consensus works by randomly picking 4 features pairs to compute a homography.  Using this randomly generated homography estimate, we transform the set of keypoints and find which points are inliers, which are just the keypoint pairs that are below some threshold distance apart after transformation.  If enough inliers are detected (I required at least 8 points), we compute another homography using all the inliers found, calculate the MSE on this new homography, and keep the homography if it gives a lower MSE on the inlier set.  We repeat this process for multiple iterations and return the homography thaat gave us the smallest inlier MSE. Below is an example of a Homography on an image along with the final set of inliers after transformation</p>
+
+<div align="left">
+  <table style="width=100%">
+    <tbody>
+      <tr>
+        <td>
+          <img src="./output/inlier.png" width="400">
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+
+<p> Below are the results of the automated image stitching using RANSAC compared to doing it manually.  The manually stitched image is in the left column and the automatically stitched ones are in the right column</p>
+
+<div align="center">
+  <table style="width=100%">
+    <tbody>
+      <tr>
+        <td>
+          <img src="./output/mosaic1.png" width="800">
+        </td>
+         <td>
+          <img src="./output/auto_haas.png" width="800">
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <img src="./output/mosaic2.png" width="800">
+        </td>
+         <td>
+          <img src="./output/auto_sproul.png" width="800">
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <img src="./output/mosaic3.png" width="800">
+        </td>
+         <td>
+          <img src="./output/auto_doe.png" width="800">
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
 
 </body></html>
